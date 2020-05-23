@@ -6,6 +6,7 @@ import re
 
 #-------------------------------------------------load_spec class
 class load_spec:
+
     # loadSpec Load model specification for a dynamic factor model (DFM)
     #
     # Description:
@@ -28,7 +29,25 @@ class load_spec:
     #     . category
     #     . blocks
     #     . BlockNames
+
+    """
+    Python Version Notes:
+
+    spec is a dictionary containing the fields:
+        . series_id
+        . name
+        . frequency
+        . units
+        . transformation
+        . category
+        . blocks
+        . BlockNames
+    """
+
+
     def __init__(self,filename):
+
+        # Find and drop series from Spec that are not in Model
         raw         = pd.read_excel(filename)
         raw.columns = [i.replace(" ","") for i in  raw.columns]
         raw         = raw[raw["Model"] == 1].reset_index(drop = True)
@@ -52,6 +71,7 @@ class load_spec:
         jColBlock             = list(raw.columns[raw.columns.str.contains("Block", case = False)])
         Blocks                = raw[jColBlock].copy()
         Blocks[Blocks.isna()] = 0
+
         if not (Blocks.iloc[:,0] == 1).all():
             raise ValueError("All variables must load on global block.")
         else:
@@ -68,10 +88,12 @@ class load_spec:
                           'cch':'Continuously Compounded Rate of Change',
                           'cca':'Continuously Compounded Annual Rate of Change',
                           'log':'Natural Log'}
+
         self.UnitsTransformed = np.array([transformation[i] for i in self.Transformation])
 
+        # Summarize model specification
         print('\n Table 1: Model specification \n')
-        print(pd.DataFrame({"SeriesID":self.SeriesID,
-                            "SeriesName":self.SeriesName,
-                            "Units":self.Units,
-                            "UnitsTransformed":self.UnitsTransformed}))
+        print(pd.DataFrame({"SeriesID"         :self.SeriesID,
+                            "SeriesName"       :self.SeriesName,
+                            "Units"            :self.Units,
+                            "UnitsTransformed" :self.UnitsTransformed}))

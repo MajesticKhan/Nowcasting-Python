@@ -4,32 +4,49 @@ import numpy as np
 import os
 
 #-------------------------------------------------Read data functions
-#loadData Load vintage of data from file and format as structure
-#
-# Description:
-#
-#   Load data from file
-#
-# Input Arguments:
-#
-#   datafile - filename of Microsoft Excel workbook file
-#
-# Output Arguments:
-#
-# Data - structure with the following fields:
-#   .    X : T x N numeric array, transformed dataset
-#   . Time : T x 1 numeric array, date number with observation dates
-#   .    Z : T x N numeric array, raw (untransformed) dataset
+def load_data(datafile,Spec,sample = None):
 
-def load_data(datafile,Spec,sample = None,loadExcel = 0):
+    # loadData Load vintage of data from file and format as structure
+    #
+    # Description:
+    #
+    #   Load data from file
+    #
+    # Input Arguments:
+    #
+    #   datafile - filename of Microsoft Excel workbook file
+    #
+    # Output Arguments:
+    #
+    # Data - structure with the following fields:
+    #   .    X : T x N numeric array, transformed dataset
+    #   . Time : T x 1 numeric array, date number with observation dates
+    #   .    Z : T x N numeric array, raw (untransformed) dataset
+
+    """
+    Python Version Notes:
+        The original matlab function can load raw data from MATLAB formatted binary (.mat) file.
+        However, in the Python version I have removed this feature.
+
+        In transformData(), the formula_dict dictionary contains functions that transform the data. I could have done
+        it in a similar fashion as the Matlab code, however I find it easier to read the code when going through the if and elif statements
+
+        When converting dates to ordinal format, we need to add 366 days to match with Matlab date numeric values
+    """
+
     if not os.path.splitext(datafile)[1] in [".xlsx",".xls"]:
-        ValueError("MUST BE EXCEL FILE")
+        ValueError("File is not an EXCEL FILE")
 
     Z,Time,Mnem = readData(datafile)
+    #    Z : raw (untransformed) observed data
+    # Time : observation periods for the time series data
+    # Mnem : series ID for each variable
 
     # Sort data based on model specification
-    Z,Mnem = sortData(Z.copy(),Mnem.copy(),Spec)
-    del Mnem # since now Mnem == Spec.SeriesID
+    Z,_ = sortData(Z.copy(),Mnem.copy(),Spec)
+
+    # since now Mnem == Spec.SeriesID
+    del Mnem
 
     # Transform data based on model specification
     X,Time,Z = transformData(Z.copy(),Time.copy(),Spec)
@@ -40,8 +57,11 @@ def load_data(datafile,Spec,sample = None,loadExcel = 0):
 
     return X,Time,Z
 
-# readData Read data from Microsoft Excel workbook file
+
 def readData(datafile):
+
+    # readData Read data from Microsoft Excel workbook file
+
     dat  = pd.read_excel(datafile)
     Mnem = np.array([i for i in list(dat.columns) if i != "Date"])
     Z    = dat[Mnem].to_numpy(copy=True)
@@ -49,8 +69,9 @@ def readData(datafile):
 
     return Z,Time,Mnem
 
-# sortData Sort series by order of model specification
 def sortData(Z,Mnem,Spec):
+
+    # sortData Sort series by order of model specification
 
     # Drop series not in Spec
     inSpec = np.in1d(Mnem,Spec.SeriesID)
@@ -65,6 +86,7 @@ def sortData(Z,Mnem,Spec):
     return Z, Mnem
 
 def transformData(Z,Time,Spec):
+
     # transformData Transforms each data series based on Spec.Transformation
     #
     # Input Arguments:
@@ -75,6 +97,17 @@ def transformData(Z,Time,Spec):
     # Output Arguments:
     #
     #      X : T x N numeric array, transformed data (stationary to enter DFM)
+
+    """
+    Transformation notes:
+        'lin' = Levels (No Transformation)
+        'chg' = Change (Difference)
+        'ch1' = Year over Year Change (Difference)
+        'pch' = Percent Change
+        'pc1' = Year over Year Percent Change
+        'pca' = Percent Change (Annual Rate)
+        'log' = Natural Log
+    """
 
     T,N          = Z.shape
     X            = np.empty((T, N))
@@ -116,10 +149,14 @@ def transformData(Z,Time,Spec):
 
     # Drop first quarter of observations
     # since transformations cause missing values
+
     return X[3:,:],Time[3:],Z[3:,:]
 
-# dropData Remove data not in estimation sample
+
 def dropData(X,Time,Z,sample):
+
+    # dropData Remove data not in estimation sample
+
     filter_index = Time >= sample
     X            = X[filter_index,:].copy()
     Time         = Time[filter_index].copy()

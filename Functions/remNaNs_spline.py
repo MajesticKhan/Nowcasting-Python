@@ -52,34 +52,45 @@ def remNaNs_spline(X,options):
     k      = options["k"]
     indNaN = np.isnan(X)
 
-    if options["method"] == 1:
-        for i in range(N):
+    if options["method"] == 1:  # replace all the missing values
+        for i in range(N): # Loop through columns
             x              = X[:,i].copy()
             x[indNaN[:,i]] = np.nanmedian(x)
             x_MA           = lfilter(np.ones((2*k+1))/(2*k+1),1,np.append(np.append(x[0]*np.ones((k,1)),x),x[-1]*np.ones((k,1))))
-            x_MA           = x_MA[(2*k+1) -1:]
+            x_MA           = x_MA[(2*k+1) -1:] # Match dimensions
+            # replace all the missing values
             x[indNaN[:,i]] = x_MA[indNaN[:,i]]
-            X[:,i]         = x
+            X[:,i]         = x # Replace vector
 
-    elif options["method"] == 2:
+    elif options["method"] == 2: # replace missing values after removing leading and closing zeros
+        # Returns row sum for NaN values. Marks true for rows with more than 80% NaN
         rem1    = np.nansum(indNaN, axis =1) > (N * 0.8)
         nanLead = np.cumsum(rem1) == np.arange(1,(T+1))
         nanEnd  = np.cumsum(rem1) == np.arange(T,0,-1)
         nanLE   = nanLead|nanEnd
 
+        # Subsets X
         X      = X[~nanLE,:]
-        indNaN = np.isnan(X)
+        indNaN = np.isnan(X) # Index for missing values
 
-        for i in range(N):
+        for i in range(N): # Loop for each series
             x          = X[:,i].copy()
             isnanx     = np.isnan(x)
-            t1         = np.min(np.where(~isnanx))
-            t2         = np.max(np.where(~isnanx))
+            t1         = np.min(np.where(~isnanx)) # First non-NaN entry
+            t2         = np.max(np.where(~isnanx)) # Last non-NaN entry
+
+            # Interpolates without NaN entries in beginning and end
             x[t1:t2+1] = CubicSpline(np.where(~isnanx)[0],x[~isnanx])(np.arange(t1,t2+1))
             isnanx     = np.isnan(x)
+
+            # replace NaN observations with median
             x[isnanx]  = np.nanmedian(x)
+
+            # Apply filter
             x_MA       = lfilter(np.ones((2*k+1))/(2*k+1),1,np.append(np.append(x[0]*np.ones((k,1)),x),x[-1]*np.ones((k,1))))
             x_MA       = x_MA[(2*k+1) -1:]
+
+            # Replace nanx wih filtered observations
             x[isnanx]  = x_MA[isnanx]
             X[:,i]     = x
 
@@ -92,7 +103,7 @@ def remNaNs_spline(X,options):
         X      = X[~nanLE,:]
         indNaN = np.isnan(X)
 
-    elif options["method"] == 4:
+    elif options["method"] == 4: # remove rows with leading and closing zeros & replace missing values
         rem1    = np.sum(indNaN, axis = 1) == N
         nanLead = np.cumsum(rem1) == np.arange(1,(T+1))
         nanEnd  = np.cumsum(rem1) == np.arange(T,0,-1)
@@ -115,7 +126,7 @@ def remNaNs_spline(X,options):
             x[isnanx] = x_MA[isnanx]
             X[:, i]   = x
 
-    elif options["method"] == 5:
+    elif options["method"] == 5: # replace missing values
         indNaN = np.isnan(X)
 
         for i in range(N):
