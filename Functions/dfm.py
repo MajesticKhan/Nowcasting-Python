@@ -70,7 +70,10 @@ def dfm(X,Spec,threshold = 1e-5,max_iter = 5000):
     # Par.r(1) =2;
     # Display blocks
 
+    print("\n\n\n")
+    print("Table 3: Block Loading Structure")
     print(pd.DataFrame(data=Spec.Blocks, index=Spec.SeriesName, columns=Spec.BlockNames))
+    print("\n")
     print("Estimating the dynamic factor model (DFM) \n\n")
 
     T, N   = X.shape
