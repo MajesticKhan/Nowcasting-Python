@@ -7,7 +7,9 @@ from Functions.dfm import dfm
 import pickle
 from Functions.summarize import summarize
 import pandas as pd
-
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import numpy as np
 
 #-------------------------------------------------Set display
 pd.set_option('display.expand_frame_repr', False)
@@ -37,11 +39,87 @@ X,Time,Z   = load_data(datafile,Spec,sample_start)
 summarize(X,Time,Spec)
 
 
+#-------------------------------------------------Plot data
+# Raw vs transformed
+idxSeries = np.where(Spec.SeriesID == "INDPRO")[0][0]
+t_obs     = ~np.isnan(X[:,idxSeries])
+
+fig = make_subplots(rows=2, cols=1,
+                    subplot_titles=("Raw Observed Data", "Transformed Data"))
+
+fig.append_trace(go.Scatter(
+    x=[dt.fromordinal(i - 366).strftime('%Y-%m-%d') for i in Time[t_obs]],
+    y=Z[t_obs,idxSeries],
+), row=1, col=1)
+
+fig.append_trace(go.Scatter(
+    x=[dt.fromordinal(i - 366).strftime('%Y-%m-%d') for i in Time[t_obs]],
+    y=X[t_obs,idxSeries],
+), row=2, col=1)
+
+
+fig.update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)'} ,
+                  title_text="Raw vs Transformed Data",
+                  showlegend=False)
+fig.update_yaxes(title_text=Spec.Units[idxSeries], row=1, col=1)
+fig.update_yaxes(title_text=Spec.UnitsTransformed[idxSeries], row=2, col=1)
+
+fig.show()
+
+
 #-------------------------------------------------Run dynamic factor model (DFM) and save estimation output as 'ResDFM'.
 threshold = 1e-4 # Set to 1e-5 for more robust estimates
-
 Res = dfm(X,Spec,threshold)
 Res = {"Res": Res,"Spec":Spec}
 
 with open('ResDFM.pickle', 'wb') as handle:
     pickle.dump(Res, handle)
+
+
+#-------------------------------------------------Plot common factor and standardized data.
+# Create traces
+fig = go.Figure()
+for i in range(Res["Res"]["x_sm"].shape[1]):
+    fig.add_trace(go.Scatter(x=[dt.fromordinal(i - 366).strftime('%Y-%m-%d') for i in Time],
+                             y=Res["Res"]["x_sm"][:,i],
+                             mode='lines',
+                             name=Spec.SeriesID[i],
+                             line={'width':.9})
+                  )
+fig.add_trace(go.Scatter(x=[dt.fromordinal(i - 366).strftime('%Y-%m-%d') for i in Time],
+                         y=Res["Res"]["Z"][:,0]*Res["Res"]["C"][idxSeries,0],
+                         mode='lines',
+                         name="Common Factor",
+                         line=dict(color='black', width=1.5))
+              )
+fig.show()
+
+
+#-------------------------------------------------Plot projection of common factor onto Payroll Employment and GDP.
+fig = make_subplots(rows=2, cols=1,
+                    subplot_titles=("Payroll Employment", "Real Gross Domestic Product"))
+series = ["PAYEMS","GDPC1"]
+for i in range(len(series)):
+    idxSeries    = np.where(Spec.SeriesID == series[i])[0][0]
+    t_obs        = ~np.isnan(X[:,idxSeries])
+    CommonFactor = np.matmul(Res["Res"]["C"][idxSeries,:5].reshape(1,-1),Res["Res"]["Z"][:,:5].T)*Res["Res"]["Wx"][idxSeries] + Res["Res"]["Mx"][idxSeries]
+
+    fig.append_trace(go.Scatter(
+        x=[dt.fromordinal(i - 366).strftime('%Y-%m-%d') for i in Time],
+        y=CommonFactor[0,:],
+        name="Common Factor ({})".format(series[i])
+    ), row=i+1, col=1)
+
+    fig.append_trace(go.Scatter(
+        x=[dt.fromordinal(i - 366).strftime('%Y-%m-%d') for i in Time[t_obs]],
+        y=X[t_obs,idxSeries],
+        name="Data ({})".format(series[i])
+    ), row=i+1, col=1)
+
+    fig.update_yaxes(title_text=Spec.Units[idxSeries] + " ({})".format(Spec.UnitsTransformed[idxSeries]), row=i+1, col=1)
+
+fig.update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)'} ,
+                  title_text="Projection of Common Factor")
+fig.show()
+
+# TODO: Add comments for the graphs and ensure that the axis are labeled properly
