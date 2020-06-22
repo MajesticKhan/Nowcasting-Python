@@ -5,6 +5,12 @@ from Functions.load_spec import load_spec
 from Functions.load_data import load_data
 from Functions.dfm import dfm
 import pickle
+from Functions.summarize import summarize
+import pandas as pd
+
+
+#-------------------------------------------------Set display
+pd.set_option('display.expand_frame_repr', False)
 
 
 #-------------------------------------------------User Inputs
@@ -26,6 +32,9 @@ UnitsTransformed = Spec.UnitsTransformed
 # Load data
 datafile   = os.path.join('data',country,vintage + '.xls')
 X,Time,Z   = load_data(datafile,Spec,sample_start)
+
+# Summarize dataset
+summarize(X,Time,Spec)
 
 
 #-------------------------------------------------Run dynamic factor model (DFM) and save estimation output as 'ResDFM'.
