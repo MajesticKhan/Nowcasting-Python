@@ -5,7 +5,7 @@ import re
 
 
 #-------------------------------------------------load_spec class
-class load_spec:
+class load_spec():
 
     # loadSpec Load model specification for a dynamic factor model (DFM)
     #
