@@ -108,12 +108,12 @@ def update_nowcast(X_old,X_new,Time,Spec,Res,series,period,vintage_old,vintage_n
         # Display the impact decomposition
         print('\n Nowcast Impact Decomposition')
         print(' Note: The displayed output is subject to rounding error\n\n')
-        print('              {} nowcast:              {}'.format(dt.fromordinal(vintage_old-366).isoformat().split('T')[0],y_old[0]))
-        print('      Impact from data revisions:      {}'.format(impact_revisions[0]))
-        print('       Impact from data releases:      {}'.format(np.nansum(news_table.Impact)))
+        print('              {} nowcast:              {:.5f}'.format(dt.fromordinal(vintage_old-366).isoformat().split('T')[0],y_old[0]))
+        print('      Impact from data revisions:      {:.5f}'.format(impact_revisions[0]))
+        print('       Impact from data releases:      {:.5f}'.format(np.nansum(news_table.Impact)))
         print('                                     +_________')
-        print('                    Total impact:      {}'.format(impact_revisions[0] + np.nansum(news_table.Impact)))
-        print('              {} nowcast:              {}'.format(dt.fromordinal(vintage_new-366).isoformat().split('T')[0],
+        print('                    Total impact:      {:.5f}'.format(impact_revisions[0] + np.nansum(news_table.Impact)))
+        print('              {} nowcast:              {:.5f}'.format(dt.fromordinal(vintage_new-366).isoformat().split('T')[0],
                                                                                 y_new[0]))
 
         print('\n  Nowcast Detail Table \n')
