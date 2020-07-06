@@ -77,6 +77,22 @@ with open('ResDFM.pickle', 'wb') as handle:
 # TODO: Res and Spec should be separate, this will be fixed after the unit tests are created
 
 
+#-------------------------------------------------Plot Loglik across number of steps
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=np.arange(1,len(Res["Res"]["loglik"][1:])+1),
+                         y=Res["Res"]["loglik"][1:],
+                         mode='lines',
+                         name="LogLik")
+)
+fig.update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)'} ,
+                  title_text="LogLik across number of steps taken",
+                  showlegend=False
+)
+fig.update_yaxes(title_text="LogLik")
+fig.update_xaxes(title_text="Number of steps")
+fig.show()
+
+
 #-------------------------------------------------Plot common factor and standardized data.
 # select INDPRO data series
 idxSeries = np.where(Spec.SeriesID == "INDPRO")[0][0]
