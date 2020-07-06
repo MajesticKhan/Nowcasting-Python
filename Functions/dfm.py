@@ -166,7 +166,8 @@ def dfm(X,Spec,threshold = 1e-5,max_iter = 5000):
             "Z_0"      : Z_0.copy(),
             "V_0"      : V_0.copy(),
             "r"        : r,
-            "p"        : p
+            "p"        : p,
+            "loglik"   : LL
     }
 
     # Display output
