@@ -82,6 +82,7 @@ def update_nowcast(X_old,X_new,Time,Spec,Res,series,period,vintage_old,vintage_n
     # Display output
     y_rev,y_new,_,actual,forecast,weight,_,_,_ = News_DFM(X_rev,X_new,Res,t_nowcast,i_series)
 
+    X_old, X_new, Res, t_fcst, v_news = X_rev,X_new,Res,t_nowcast,i_series
     print("\n Nowcast Update: {}".format(dt.fromordinal(vintage_new-366).isoformat().split('T')[0]))
     print("\n Nowcast for: {} ({}), {}".format(Spec.SeriesName[i_series][0],
                                                Spec.UnitsTransformed[i_series][0],
@@ -108,12 +109,12 @@ def update_nowcast(X_old,X_new,Time,Spec,Res,series,period,vintage_old,vintage_n
         # Display the impact decomposition
         print('\n Nowcast Impact Decomposition')
         print(' Note: The displayed output is subject to rounding error\n\n')
-        print('              {} nowcast:              {}'.format(dt.fromordinal(vintage_old-366).isoformat().split('T')[0],y_old[0]))
-        print('      Impact from data revisions:      {}'.format(impact_revisions[0]))
-        print('       Impact from data releases:      {}'.format(np.nansum(news_table.Impact)))
+        print('              {} nowcast:              {:.5f}'.format(dt.fromordinal(vintage_old-366).isoformat().split('T')[0],y_old[0]))
+        print('      Impact from data revisions:      {:.5f}'.format(impact_revisions[0]))
+        print('       Impact from data releases:      {:.5f}'.format(np.nansum(news_table.Impact)))
         print('                                     +_________')
-        print('                    Total impact:      {}'.format(impact_revisions[0] + np.nansum(news_table.Impact)))
-        print('              {} nowcast:              {}'.format(dt.fromordinal(vintage_new-366).isoformat().split('T')[0],
+        print('                    Total impact:      {:.5f}'.format(impact_revisions[0] + np.nansum(news_table.Impact)))
+        print('              {} nowcast:              {:.5f}'.format(dt.fromordinal(vintage_new-366).isoformat().split('T')[0],
                                                                                 y_new[0]))
 
         print('\n  Nowcast Detail Table \n')
@@ -191,8 +192,9 @@ def News_DFM(X_old,X_new,Res,t_fcst,v_news):
         i_miss = miss_old - miss_new
 
         # Time/variable indicies where case (b) is true
-        t_miss = np.where(i_miss == 1)[0]
-        v_miss = np.where(i_miss == 1)[1]
+        t_miss, v_miss = np.where(i_miss == 1)
+        ordered_col    = v_miss.argsort()
+        t_miss, v_miss = t_miss[ordered_col], v_miss[ordered_col]
 
         # FORECAST SUBCASE (A): NO NEW INFORMATION
         if v_miss.shape[0] == 0:
@@ -242,7 +244,7 @@ def News_DFM(X_old,X_new,Res,t_fcst,v_news):
 
             for i in range(n_news): # Cycle through total number of updates
                 h = abs(t_fcst-t_miss[i])[0]
-                m = max(t_miss[i],t_fcst)[0]
+                m = np.maximum(t_miss[i],t_fcst)[0]
 
                 # If location of update is later than the forecasting date
                 if t_miss[i] > t_fcst:
@@ -278,7 +280,7 @@ def News_DFM(X_old,X_new,Res,t_fcst,v_news):
                     h = abs(lag[i] - lag[j])
                     m = max(t_miss[i],t_miss[j])
 
-                    if t_miss[j] > t_miss[j]:
+                    if t_miss[j] > t_miss[i]:
                         Pp = Plag[h][m].copy()
                     else:
                         Pp = Plag[h][m].T.copy()
@@ -404,22 +406,15 @@ def para_const(X,P,lag):
     Zsmooth = Ss["ZmT"].copy()         # Smoothed factors
     Vsmooth = Ss["VmT"].copy()         # Smoothed covariance values
 
-    Plag    = [Vs.copy()]
+    Plag = [Vs.copy()]
 
-    for jk in range(1,lag+1):
-        reset = True
+
+    for jk in range(lag):
+        Plag.append(np.zeros(Vs.shape))
         for jt in range(Plag[0].shape[0]-1,lag-1,-1):
-            As = np.matmul(np.matmul(Vf[jt-jk],A.T),
-                           np.linalg.pinv(np.matmul(np.matmul(A,Vf[jt-jk]),A.T) + Q))
-            if reset:
-                reset      = False
-                base       = np.matmul(As,Plag[jk-1][jt])
-                fill       = np.zeros((Plag[0].shape[0]-(lag),*base.shape))
-                fill[:]    = np.nan
-                fill[jt-1] = base
-                Plag.append(fill)
-            else:
-                Plag[jk][jt] = np.matmul(As, Plag[jk-1][jt])
+            As = np.matmul(np.matmul(Vf[jt-jk-1],A.T),
+                           np.linalg.pinv(np.matmul(np.matmul(A,Vf[jt-jk-1]),A.T) + Q))
+            Plag[jk+1][jt] = np.matmul(As, Plag[jk][jt])
 
     # Prepare data for output
     Zsmooth = Zsmooth.T
