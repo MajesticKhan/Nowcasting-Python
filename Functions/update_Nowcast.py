@@ -82,7 +82,6 @@ def update_nowcast(X_old,X_new,Time,Spec,Res,series,period,vintage_old,vintage_n
     # Display output
     y_rev,y_new,_,actual,forecast,weight,_,_,_ = News_DFM(X_rev,X_new,Res,t_nowcast,i_series)
 
-    X_old, X_new, Res, t_fcst, v_news = X_rev,X_new,Res,t_nowcast,i_series
     print("\n Nowcast Update: {}".format(dt.fromordinal(vintage_new-366).isoformat().split('T')[0]))
     print("\n Nowcast for: {} ({}), {}".format(Spec.SeriesName[i_series][0],
                                                Spec.UnitsTransformed[i_series][0],
