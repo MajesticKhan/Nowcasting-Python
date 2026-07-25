@@ -121,7 +121,6 @@ def dfm(X,Spec,threshold = 1e-5,max_iter = 5000):
     y_est,_          = remNaNs_spline(xNaN.copy(),optNaN)
     y_est            = y_est.T
 
-    max_iter = 5000
     while num_iter < max_iter and not converged: # Loop until converges or max iter.
 
         # Applying EM algorithm
